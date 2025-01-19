@@ -1,4 +1,5 @@
 """Test bond diagnostics."""
+
 from homeassistant.components.fan import DOMAIN as FAN_DOMAIN
 from homeassistant.core import HomeAssistant
 
@@ -42,5 +43,12 @@ async def test_diagnostics(
             "data": {"access_token": "**REDACTED**", "host": "some host"},
             "title": "Mock Title",
         },
-        "hub": {"version": {"bondid": "ZXXX12345"}},
+        "hub": {
+            "version": {
+                "bondid": "ZXXX12345",
+                "fw_ver": "test-version",
+                "mcu_ver": "test-hw-version",
+                "target": "test-model",
+            }
+        },
     }

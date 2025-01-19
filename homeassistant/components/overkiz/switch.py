@@ -1,9 +1,10 @@
 """Support for Overkiz switches."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, cast
+from typing import Any
 
 from pyoverkiz.enums import OverkizCommand, OverkizCommandParam, OverkizState
 from pyoverkiz.enums.ui import UIClass, UIWidget
@@ -14,28 +15,20 @@ from homeassistant.components.switch import (
     SwitchEntity,
     SwitchEntityDescription,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
+from homeassistant.const import EntityCategory, Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import HomeAssistantOverkizData
-from .const import DOMAIN, IGNORED_OVERKIZ_DEVICES
+from . import OverkizDataConfigEntry
 from .entity import OverkizDescriptiveEntity
 
 
-@dataclass
-class OverkizSwitchDescriptionMixin:
-    """Define an entity description mixin for switch entities."""
+@dataclass(frozen=True, kw_only=True)
+class OverkizSwitchDescription(SwitchEntityDescription):
+    """Class to describe an Overkiz switch."""
 
     turn_on: str
     turn_off: str
-
-
-@dataclass
-class OverkizSwitchDescription(SwitchEntityDescription, OverkizSwitchDescriptionMixin):
-    """Class to describe an Overkiz switch."""
-
     is_on: Callable[[Callable[[str], OverkizStateType]], bool] | None = None
     turn_on_args: OverkizStateType | list[OverkizStateType] | None = None
     turn_off_args: OverkizStateType | list[OverkizStateType] | None = None
@@ -107,19 +100,6 @@ SWITCH_DESCRIPTIONS: list[OverkizSwitchDescription] = [
         ),
         entity_category=EntityCategory.CONFIG,
     ),
-    OverkizSwitchDescription(
-        key=UIWidget.DYNAMIC_SHUTTER,
-        name="Silent mode",
-        turn_on=OverkizCommand.ACTIVATE_OPTION,
-        turn_on_args=OverkizCommandParam.SILENCE,
-        turn_off=OverkizCommand.DEACTIVATE_OPTION,
-        turn_off_args=OverkizCommandParam.SILENCE,
-        is_on=lambda select_state: (
-            OverkizCommandParam.SILENCE
-            in cast(list, select_state(OverkizState.CORE_ACTIVATED_OPTIONS))
-        ),
-        icon="mdi:feather",
-    ),
 ]
 
 SUPPORTED_DEVICES = {
@@ -129,32 +109,24 @@ SUPPORTED_DEVICES = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: OverkizDataConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the Overkiz switch from a config entry."""
-    data: HomeAssistantOverkizData = hass.data[DOMAIN][entry.entry_id]
-    entities: list[OverkizSwitch] = []
+    data = entry.runtime_data
 
-    for device in data.coordinator.data.values():
+    async_add_entities(
+        OverkizSwitch(
+            device.device_url,
+            data.coordinator,
+            description,
+        )
+        for device in data.platforms[Platform.SWITCH]
         if (
-            device.widget in IGNORED_OVERKIZ_DEVICES
-            or device.ui_class in IGNORED_OVERKIZ_DEVICES
-        ):
-            continue
-
-        if description := SUPPORTED_DEVICES.get(device.widget) or SUPPORTED_DEVICES.get(
-            device.ui_class
-        ):
-            entities.append(
-                OverkizSwitch(
-                    device.device_url,
-                    data.coordinator,
-                    description,
-                )
-            )
-
-    async_add_entities(entities)
+            description := SUPPORTED_DEVICES.get(device.widget)
+            or SUPPORTED_DEVICES.get(device.ui_class)
+        )
+    )
 
 
 class OverkizSwitch(OverkizDescriptiveEntity, SwitchEntity):

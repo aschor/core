@@ -1,4 +1,5 @@
 """The unifiprotect integration discovery."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -40,7 +41,10 @@ def async_start_discovery(hass: HomeAssistant) -> None:
     # Do not block startup since discovery takes 31s or more
     _async_start_background_discovery()
     async_track_time_interval(
-        hass, _async_start_background_discovery, DISCOVERY_INTERVAL
+        hass,
+        _async_start_background_discovery,
+        DISCOVERY_INTERVAL,
+        cancel_on_shutdown=True,
     )
 
 

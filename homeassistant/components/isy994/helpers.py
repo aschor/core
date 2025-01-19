@@ -1,4 +1,5 @@
 """Sorting helpers for ISY device classifications."""
+
 from __future__ import annotations
 
 from typing import cast
@@ -22,10 +23,9 @@ from pyisy.constants import (
 )
 from pyisy.nodes import Group, Node, Nodes
 from pyisy.programs import Programs
-from pyisy.variables import Variables
 
 from homeassistant.const import ATTR_MANUFACTURER, ATTR_MODEL, Platform
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .const import (
     _LOGGER,
@@ -317,9 +317,9 @@ def _generate_device_info(node: Node) -> DeviceInfo:
         and node.zwave_props
         and node.zwave_props.mfr_id != "0"
     ):
-        device_info[
-            ATTR_MANUFACTURER
-        ] = f"Z-Wave MfrID:{int(node.zwave_props.mfr_id):#0{6}x}"
+        device_info[ATTR_MANUFACTURER] = (
+            f"Z-Wave MfrID:{int(node.zwave_props.mfr_id):#0{6}x}"
+        )
         model += (
             f"Type:{int(node.zwave_props.prod_type_id):#0{6}x} "
             f"Product:{int(node.zwave_props.product_id):#0{6}x}"
@@ -349,8 +349,6 @@ def _categorize_nodes(
             if getattr(node, "is_dimmable", False):
                 aux_controls = ROOT_AUX_CONTROLS.intersection(node.aux_properties)
                 for control in aux_controls:
-                    # Deprecated all aux properties as sensors. Update in 2023.5.0 to remove extras.
-                    isy_data.aux_properties[Platform.SENSOR].append((node, control))
                     platform = NODE_AUX_FILTERS[control]
                     isy_data.aux_properties[platform].append((node, control))
             if hasattr(node, TAG_ENABLED):
@@ -432,22 +430,8 @@ def _categorize_programs(isy_data: IsyData, programs: Programs) -> None:
             isy_data.programs[platform].append(entity)
 
 
-def _categorize_variables(
-    isy_data: IsyData, variables: Variables, identifier: str
-) -> None:
-    """Gather the ISY Variables to be added as sensors."""
-    try:
-        isy_data.variables[Platform.SENSOR] = [
-            variables[vtype][vid]
-            for (vtype, vname, vid) in variables.children
-            if identifier in vname
-        ]
-    except KeyError as err:
-        _LOGGER.error("Error adding ISY Variables: %s", err)
-
-
 def convert_isy_value_to_hass(
-    value: int | float | None,
+    value: float | None,
     uom: str | None,
     precision: int | str,
     fallback_precision: int | None = None,

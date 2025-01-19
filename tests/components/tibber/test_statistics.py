@@ -1,9 +1,10 @@
 """Test adding external statistics from Tibber."""
+
 from unittest.mock import AsyncMock
 
 from homeassistant.components.recorder import Recorder
 from homeassistant.components.recorder.statistics import statistics_during_period
-from homeassistant.components.tibber.sensor import TibberDataCoordinator
+from homeassistant.components.tibber.coordinator import TibberDataCoordinator
 from homeassistant.core import HomeAssistant
 from homeassistant.util import dt as dt_util
 
@@ -47,9 +48,6 @@ async def test_async_setup_entry(recorder_mock: Recorder, hass: HomeAssistant) -
         for k, stat in enumerate(stats[statistic_id]):
             assert stat["start"] == dt_util.parse_datetime(data[k]["from"]).timestamp()
             assert stat["state"] == data[k][key]
-            assert stat["mean"] is None
-            assert stat["min"] is None
-            assert stat["max"] is None
             assert stat["last_reset"] is None
 
             _sum += data[k][key]

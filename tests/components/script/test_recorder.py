@@ -1,4 +1,5 @@
 """The tests for script recorder."""
+
 from __future__ import annotations
 
 import pytest
@@ -14,7 +15,7 @@ from homeassistant.components.script import (
     ATTR_MODE,
 )
 from homeassistant.const import ATTR_FRIENDLY_NAME
-from homeassistant.core import Context, HomeAssistant, callback
+from homeassistant.core import Context, HomeAssistant, ServiceCall, callback
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 
@@ -23,13 +24,13 @@ from tests.components.recorder.common import async_wait_recording_done
 
 
 @pytest.fixture
-def calls(hass):
+def calls(hass: HomeAssistant) -> list[ServiceCall]:
     """Track calls to a mock service."""
     return async_mock_service(hass, "test", "automation")
 
 
 async def test_exclude_attributes(
-    recorder_mock: Recorder, hass: HomeAssistant, calls
+    recorder_mock: Recorder, hass: HomeAssistant, calls: list[ServiceCall]
 ) -> None:
     """Test automation registered attributes to be excluded."""
     now = dt_util.utcnow()
@@ -51,7 +52,7 @@ async def test_exclude_attributes(
             "script": {
                 "test": {
                     "sequence": {
-                        "service": "test.script",
+                        "action": "test.script",
                         "data_template": {"hello": "{{ greeting }}"},
                     }
                 }
@@ -66,7 +67,9 @@ async def test_exclude_attributes(
     await async_wait_recording_done(hass)
     assert len(calls) == 1
 
-    states = await hass.async_add_executor_job(get_significant_states, hass, now)
+    states = await hass.async_add_executor_job(
+        get_significant_states, hass, now, None, hass.states.async_entity_ids()
+    )
     assert len(states) >= 1
     for entity_states in states.values():
         for state in entity_states:

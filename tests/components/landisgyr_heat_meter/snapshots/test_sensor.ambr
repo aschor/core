@@ -12,6 +12,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_volume_usage',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '456.0',
     }),
@@ -26,6 +27,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_heat_usage_gj',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '123.0',
     }),
@@ -39,6 +41,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_heat_previous_year_gj',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '111.0',
     }),
@@ -52,8 +55,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_volume_usage_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '450.0',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -63,8 +67,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_ownership_number',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '123a',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -74,8 +79,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_error_number',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -85,8 +91,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_device_number',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'devicenr_789',
+      'state': 'abc1',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -97,8 +104,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_measurement_period_minutes',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '60',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -109,8 +117,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_power_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '22.1',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -121,8 +130,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_power_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '22.4',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -133,8 +143,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flowrate_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0.744',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -145,8 +156,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flowrate_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0.743',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -157,8 +169,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_return_temperature_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '96.1',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -169,8 +182,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_return_temperature_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '96.2',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -181,8 +195,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flow_temperature_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '98.5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -193,8 +208,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flow_temperature_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '98.4',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -205,8 +221,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_operating_hours',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '115575',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -217,8 +234,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flow_hours',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '30242',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -229,8 +247,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_fault_hours',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -241,8 +260,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_fault_hours_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -252,8 +272,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_yearly_set_day',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '01-01',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -263,8 +284,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_monthly_set_day',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '01',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -275,6 +297,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_meter_date_time',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '2022-05-19T19:41:17+00:00',
     }),
@@ -287,8 +310,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_measuring_range',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '1.5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -297,8 +321,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_settings_and_firmware',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0 1 0 0000 CECV CECV 1 5.16 5.16 F 101008 040404 08 0',
     }),
   ])
 # ---
@@ -315,6 +340,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_heat_usage_mwh',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '123.0',
     }),
@@ -329,6 +355,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_volume_usage',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '456.0',
     }),
@@ -342,6 +369,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_heat_previous_year_mwh',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '111.0',
     }),
@@ -355,8 +383,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_volume_usage_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '450.0',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -366,8 +395,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_ownership_number',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '123a',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -377,8 +407,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_error_number',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -388,8 +419,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_device_number',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'devicenr_789',
+      'state': 'abc1',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -400,8 +432,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_measurement_period_minutes',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '60',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -412,8 +445,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_power_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '22.1',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -424,8 +458,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_power_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '22.4',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -436,8 +471,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flowrate_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0.744',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -448,8 +484,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flowrate_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0.743',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -460,8 +497,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_return_temperature_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '96.1',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -472,8 +510,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_return_temperature_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '96.2',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -484,8 +523,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flow_temperature_max',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '98.5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -496,8 +536,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flow_temperature_max_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '98.4',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -508,8 +549,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_operating_hours',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '115575',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -520,8 +562,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_flow_hours',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '30242',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -532,8 +575,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_fault_hours',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -544,8 +588,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_fault_hours_previous_year',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -555,8 +600,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_yearly_set_day',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '01-01',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -566,8 +612,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_monthly_set_day',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '01',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -578,6 +625,7 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_meter_date_time',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
       'state': '2022-05-19T19:41:17+00:00',
     }),
@@ -590,8 +638,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_measuring_range',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '1.5',
     }),
     StateSnapshot({
       'attributes': ReadOnlyDict({
@@ -600,8 +649,9 @@
       'context': <ANY>,
       'entity_id': 'sensor.heat_meter_settings_and_firmware',
       'last_changed': <ANY>,
+      'last_reported': <ANY>,
       'last_updated': <ANY>,
-      'state': 'unknown',
+      'state': '0 1 0 0000 CECV CECV 1 5.16 5.16 F 101008 040404 08 0',
     }),
   ])
 # ---

@@ -1,4 +1,5 @@
 """Support for interface with an LG webOS Smart TV."""
+
 from __future__ import annotations
 
 import asyncio
@@ -8,11 +9,10 @@ from datetime import timedelta
 from functools import wraps
 from http import HTTPStatus
 import logging
-from ssl import SSLContext
-from typing import Any, Concatenate, ParamSpec, TypeVar, cast
+from typing import Any, Concatenate, cast
 
 from aiowebostv import WebOsClient, WebOsTvPairError
-import async_timeout
+import voluptuous as vol
 
 from homeassistant import util
 from homeassistant.components.media_player import (
@@ -22,30 +22,28 @@ from homeassistant.components.media_player import (
     MediaPlayerState,
     MediaType,
 )
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    ATTR_ENTITY_ID,
-    ATTR_SUPPORTED_FEATURES,
-    ENTITY_MATCH_ALL,
-    ENTITY_MATCH_NONE,
-)
+from homeassistant.const import ATTR_COMMAND, ATTR_SUPPORTED_FEATURES
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv, entity_platform
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.trigger import PluggableAction
+from homeassistant.helpers.typing import VolDictType
 
-from . import update_client_key
+from . import WebOsTvConfigEntry, update_client_key
 from .const import (
+    ATTR_BUTTON,
     ATTR_PAYLOAD,
     ATTR_SOUND_OUTPUT,
     CONF_SOURCES,
-    DATA_CONFIG_ENTRY,
     DOMAIN,
     LIVE_TV_APP_ID,
+    SERVICE_BUTTON,
+    SERVICE_COMMAND,
+    SERVICE_SELECT_SOUND_OUTPUT,
     WEBOSTV_EXCEPTIONS,
 )
 from .triggers.turn_on import async_get_turn_on_trigger
@@ -69,23 +67,39 @@ SUPPORT_WEBOSTV_VOLUME = (
 
 MIN_TIME_BETWEEN_SCANS = timedelta(seconds=10)
 MIN_TIME_BETWEEN_FORCED_SCANS = timedelta(seconds=1)
+PARALLEL_UPDATES = 0
 SCAN_INTERVAL = timedelta(seconds=10)
+
+BUTTON_SCHEMA: VolDictType = {vol.Required(ATTR_BUTTON): cv.string}
+COMMAND_SCHEMA: VolDictType = {
+    vol.Required(ATTR_COMMAND): cv.string,
+    vol.Optional(ATTR_PAYLOAD): dict,
+}
+SOUND_OUTPUT_SCHEMA: VolDictType = {vol.Required(ATTR_SOUND_OUTPUT): cv.string}
+
+SERVICES = (
+    (SERVICE_BUTTON, BUTTON_SCHEMA, "async_button"),
+    (SERVICE_COMMAND, COMMAND_SCHEMA, "async_command"),
+    (SERVICE_SELECT_SOUND_OUTPUT, SOUND_OUTPUT_SCHEMA, "async_select_sound_output"),
+)
 
 
 async def async_setup_entry(
-    hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: WebOsTvConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the LG webOS Smart TV platform."""
-    client = hass.data[DOMAIN][DATA_CONFIG_ENTRY][entry.entry_id]
-    async_add_entities([LgWebOSMediaPlayerEntity(entry, client)])
+    platform = entity_platform.async_get_current_platform()
+
+    for service_name, schema, method in SERVICES:
+        platform.async_register_entity_service(service_name, schema, method)
+
+    async_add_entities([LgWebOSMediaPlayerEntity(entry)])
 
 
-_T = TypeVar("_T", bound="LgWebOSMediaPlayerEntity")
-_P = ParamSpec("_P")
-
-
-def cmd(
-    func: Callable[Concatenate[_T, _P], Awaitable[None]]
+def cmd[_T: LgWebOSMediaPlayerEntity, **_P](
+    func: Callable[Concatenate[_T, _P], Awaitable[None]],
 ) -> Callable[Concatenate[_T, _P], Coroutine[Any, Any, None]]:
     """Catch command exceptions."""
 
@@ -115,13 +129,15 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
     """Representation of a LG webOS Smart TV."""
 
     _attr_device_class = MediaPlayerDeviceClass.TV
+    _attr_has_entity_name = True
+    _attr_name = None
 
-    def __init__(self, entry: ConfigEntry, client: WebOsClient) -> None:
+    def __init__(self, entry: WebOsTvConfigEntry) -> None:
         """Initialize the webos device."""
         self._entry = entry
-        self._client = client
+        self._client = entry.runtime_data
         self._attr_assumed_state = True
-        self._attr_name = entry.title
+        self._device_name = entry.title
         self._attr_unique_id = entry.unique_id
         self._sources = entry.options.get(CONF_SOURCES)
 
@@ -145,10 +161,6 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
                 )
             )
 
-        self.async_on_remove(
-            async_dispatcher_connect(self.hass, DOMAIN, self.async_signal_handler)
-        )
-
         await self._client.register_state_update_callback(
             self.async_handle_state_update
         )
@@ -167,19 +179,6 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
     async def async_will_remove_from_hass(self) -> None:
         """Call disconnect on removal."""
         self._client.unregister_state_update_callback(self.async_handle_state_update)
-
-    async def async_signal_handler(self, data: dict[str, Any]) -> None:
-        """Handle domain-specific signal by calling appropriate method."""
-        if (entity_ids := data[ATTR_ENTITY_ID]) == ENTITY_MATCH_NONE:
-            return
-
-        if entity_ids == ENTITY_MATCH_ALL or self.entity_id in entity_ids:
-            params = {
-                key: value
-                for key, value in data.items()
-                if key not in ["entity_id", "method"]
-            }
-            await getattr(self, data["method"])(**params)
 
     async def async_handle_state_update(self, _client: WebOsClient) -> None:
         """Update state from WebOsClient."""
@@ -237,8 +236,23 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
         self._attr_device_info = DeviceInfo(
             identifiers={(DOMAIN, cast(str, self.unique_id))},
             manufacturer="LG",
-            name=self.name,
+            name=self._device_name,
         )
+
+        self._attr_assumed_state = True
+        if (
+            self._client.is_on
+            and self._client.media_state is not None
+            and self._client.media_state.get("foregroundAppInfo") is not None
+        ):
+            self._attr_assumed_state = False
+            for entry in self._client.media_state.get("foregroundAppInfo"):
+                if entry.get("playState") == "playing":
+                    self._attr_state = MediaPlayerState.PLAYING
+                elif entry.get("playState") == "paused":
+                    self._attr_state = MediaPlayerState.PAUSED
+                elif entry.get("playState") == "unloaded":
+                    self._attr_state = MediaPlayerState.IDLE
 
         if self._client.system_info is not None or self.state != MediaPlayerState.OFF:
             maj_v = self._client.software_info.get("major_ver")
@@ -313,7 +327,7 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
         if self._client.is_connected():
             return
 
-        with suppress(*WEBOSTV_EXCEPTIONS, WebOsTvPairError):
+        with suppress(*WEBOSTV_EXCEPTIONS):
             try:
                 await self._client.connect()
             except WebOsTvPairError:
@@ -376,7 +390,9 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
     async def async_select_source(self, source: str) -> None:
         """Select input source."""
         if (source_dict := self._source_list.get(source)) is None:
-            _LOGGER.warning("Source %s not found for %s", source, self.name)
+            _LOGGER.warning(
+                "Source %s not found for %s", source, self._friendly_name_internal()
+            )
             return
         if source_dict.get("title"):
             await self._client.launch_app(source_dict["id"])
@@ -408,13 +424,13 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
                     partial_match_channel_id = channel["channelId"]
 
             if perfect_match_channel_id is not None:
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Switching to channel <%s> with perfect match",
                     perfect_match_channel_id,
                 )
                 await self._client.set_channel(perfect_match_channel_id)
             elif partial_match_channel_id is not None:
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Switching to channel <%s> with partial match",
                     partial_match_channel_id,
                 )
@@ -470,15 +486,13 @@ class LgWebOSMediaPlayerEntity(RestoreEntity, MediaPlayerEntity):
         SSLContext to bypass validation errors if url starts with https.
         """
         content = None
-        ssl_context = None
-        if url.startswith("https"):
-            ssl_context = SSLContext()
 
         websession = async_get_clientsession(self.hass)
-        with suppress(asyncio.TimeoutError), async_timeout.timeout(10):
-            response = await websession.get(url, ssl=ssl_context)
-            if response.status == HTTPStatus.OK:
-                content = await response.read()
+        with suppress(TimeoutError):
+            async with asyncio.timeout(10):
+                response = await websession.get(url, ssl=False)
+                if response.status == HTTPStatus.OK:
+                    content = await response.read()
 
         if content is None:
             _LOGGER.warning("Error retrieving proxied image from %s", url)

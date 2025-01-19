@@ -1,4 +1,5 @@
 """Tests for the Rituals Perfume Genie number platform."""
+
 from __future__ import annotations
 
 import pytest
@@ -11,13 +12,9 @@ from homeassistant.components.number import (
     DOMAIN as NUMBER_DOMAIN,
     SERVICE_SET_VALUE,
 )
-from homeassistant.components.rituals_perfume_genie.number import (
-    MAX_PERFUME_AMOUNT,
-    MIN_PERFUME_AMOUNT,
-    PERFUME_AMOUNT_SUFFIX,
-)
-from homeassistant.const import ATTR_ENTITY_ID, ATTR_ICON
+from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import ServiceValidationError
 from homeassistant.helpers import entity_registry as er
 from homeassistant.setup import async_setup_component
 
@@ -40,13 +37,12 @@ async def test_number_entity(
     state = hass.states.get("number.genie_perfume_amount")
     assert state
     assert state.state == str(diffuser.perfume_amount)
-    assert state.attributes[ATTR_ICON] == "mdi:gauge"
-    assert state.attributes[ATTR_MIN] == MIN_PERFUME_AMOUNT
-    assert state.attributes[ATTR_MAX] == MAX_PERFUME_AMOUNT
+    assert state.attributes[ATTR_MIN] == 1
+    assert state.attributes[ATTR_MAX] == 3
 
     entry = entity_registry.async_get("number.genie_perfume_amount")
     assert entry
-    assert entry.unique_id == f"{diffuser.hublot}{PERFUME_AMOUNT_SUFFIX}"
+    assert entry.unique_id == f"{diffuser.hublot}-perfume_amount"
 
 
 async def test_set_number_value(hass: HomeAssistant) -> None:
@@ -91,7 +87,7 @@ async def test_set_number_value_out_of_range(hass: HomeAssistant) -> None:
     assert state
     assert state.state == "2"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
             NUMBER_DOMAIN,
             SERVICE_SET_VALUE,
@@ -110,7 +106,7 @@ async def test_set_number_value_out_of_range(hass: HomeAssistant) -> None:
     assert state
     assert state.state == "2"
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ServiceValidationError):
         await hass.services.async_call(
             NUMBER_DOMAIN,
             SERVICE_SET_VALUE,

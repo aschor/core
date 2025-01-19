@@ -1,10 +1,11 @@
 """The tests for unifiprotect recorder."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
 from unittest.mock import Mock
 
-from pyunifiprotect.data import Camera, Event, EventType
+from uiprotect.data import Camera, Event, EventType, ModelType
 
 from homeassistant.components.recorder import Recorder
 from homeassistant.components.recorder.history import get_significant_states
@@ -39,6 +40,7 @@ async def test_exclude_attributes(
     )
 
     event = Event(
+        model=ModelType.EVENT,
         id="test_event_id",
         type=EventType.MOTION,
         start=fixed_now - timedelta(seconds=1),
@@ -49,7 +51,7 @@ async def test_exclude_attributes(
         camera_id=doorbell.id,
     )
 
-    new_camera = doorbell.copy()
+    new_camera = doorbell.model_copy()
     new_camera.is_motion_detected = True
     new_camera.last_motion_event_id = event.id
 
@@ -69,7 +71,9 @@ async def test_exclude_attributes(
     assert state.attributes[ATTR_EVENT_SCORE] == 100
     await async_wait_recording_done(hass)
 
-    states = await hass.async_add_executor_job(get_significant_states, hass, now)
+    states = await hass.async_add_executor_job(
+        get_significant_states, hass, now, None, hass.states.async_entity_ids()
+    )
     assert len(states) >= 1
     for entity_states in states.values():
         for state in entity_states:

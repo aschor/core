@@ -5,6 +5,7 @@ There are two different types of discoveries that can be fired/listened for.
  - listen_platform/discover_platform is for platforms. These are used by
    components to allow discovery of their platforms.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
@@ -13,11 +14,14 @@ from typing import Any, TypedDict
 from homeassistant import core, setup
 from homeassistant.const import Platform
 from homeassistant.loader import bind_hass
+from homeassistant.util.signal_type import SignalTypeFormat
 
-from .dispatcher import async_dispatcher_connect, async_dispatcher_send
+from .dispatcher import async_dispatcher_connect, async_dispatcher_send_internal
 from .typing import ConfigType, DiscoveryInfoType
 
-SIGNAL_PLATFORM_DISCOVERED = "discovery.platform_discovered_{}"
+SIGNAL_PLATFORM_DISCOVERED: SignalTypeFormat[DiscoveryDict] = SignalTypeFormat(
+    "discovery.platform_discovered_{}"
+)
 EVENT_LOAD_PLATFORM = "load_platform.{}"
 ATTR_PLATFORM = "platform"
 ATTR_DISCOVERED = "discovered"
@@ -67,7 +71,10 @@ def discover(
     hass_config: ConfigType,
 ) -> None:
     """Fire discovery event. Can ensure a component is loaded."""
-    hass.add_job(async_discover(hass, service, discovered, component, hass_config))
+    hass.create_task(
+        async_discover(hass, service, discovered, component, hass_config),
+        f"discover {service} {component} {discovered}",
+    )
 
 
 @bind_hass
@@ -88,7 +95,9 @@ async def async_discover(
         "discovered": discovered,
     }
 
-    async_dispatcher_send(hass, SIGNAL_PLATFORM_DISCOVERED.format(service), data)
+    async_dispatcher_send_internal(
+        hass, SIGNAL_PLATFORM_DISCOVERED.format(service), data
+    )
 
 
 @bind_hass
@@ -127,8 +136,9 @@ def load_platform(
     hass_config: ConfigType,
 ) -> None:
     """Load a component and platform dynamically."""
-    hass.add_job(
-        async_load_platform(hass, component, platform, discovered, hass_config)
+    hass.create_task(
+        async_load_platform(hass, component, platform, discovered, hass_config),
+        f"discovery load_platform {component} {platform}",
     )
 
 
@@ -144,8 +154,11 @@ async def async_load_platform(
 
     Use `async_listen_platform` to register a callback for these events.
 
-    Warning: Do not await this inside a setup method to avoid a dead lock.
-    Use `hass.async_create_task(async_load_platform(..))` instead.
+    Warning: This method can load a base component if its not loaded which
+    can take a long time since base components currently have to import
+    every platform integration listed under it to do config validation.
+    To avoid waiting for this, use
+    `hass.async_create_task(async_load_platform(..))` instead.
     """
     assert hass_config is not None, "You need to pass in the real hass config"
 
@@ -166,4 +179,6 @@ async def async_load_platform(
         "discovered": discovered,
     }
 
-    async_dispatcher_send(hass, SIGNAL_PLATFORM_DISCOVERED.format(service), data)
+    async_dispatcher_send_internal(
+        hass, SIGNAL_PLATFORM_DISCOVERED.format(service), data
+    )

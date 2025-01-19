@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+import asyncio
+from datetime import date, datetime, timedelta
 import logging
 from typing import Any
 
 from ical.calendar import Calendar
 from ical.calendar_stream import IcsCalendarStream
 from ical.event import Event
+from ical.exceptions import CalendarParseError
 from ical.store import EventStore, EventStoreError
 from ical.types import Range, Recur
-from pydantic import ValidationError
 import voluptuous as vol
 
 from homeassistant.components.calendar import (
@@ -44,7 +45,9 @@ async def async_setup_entry(
     """Set up the local calendar platform."""
     store = hass.data[DOMAIN][config_entry.entry_id]
     ics = await store.async_load()
-    calendar = IcsCalendarStream.calendar_from_ics(ics)
+    calendar: Calendar = await hass.async_add_executor_job(
+        IcsCalendarStream.calendar_from_ics, ics
+    )
     calendar.prodid = PRODID
 
     name = config_entry.data[CONF_CALENDAR_NAME]
@@ -72,8 +75,9 @@ class LocalCalendarEntity(CalendarEntity):
         """Initialize LocalCalendarEntity."""
         self._store = store
         self._calendar = calendar
+        self._calendar_lock = asyncio.Lock()
         self._event: CalendarEvent | None = None
-        self._attr_name = name.capitalize()
+        self._attr_name = name
         self._attr_unique_id = unique_id
 
     @property
@@ -108,8 +112,10 @@ class LocalCalendarEntity(CalendarEntity):
     async def async_create_event(self, **kwargs: Any) -> None:
         """Add a new event to calendar."""
         event = _parse_event(kwargs)
-        EventStore(self._calendar).add(event)
-        await self._async_store()
+        async with self._calendar_lock:
+            event_store = EventStore(self._calendar)
+            await self.hass.async_add_executor_job(event_store.add, event)
+            await self._async_store()
         await self.async_update_ha_state(force_refresh=True)
 
     async def async_delete_event(
@@ -122,15 +128,16 @@ class LocalCalendarEntity(CalendarEntity):
         range_value: Range = Range.NONE
         if recurrence_range == Range.THIS_AND_FUTURE:
             range_value = Range.THIS_AND_FUTURE
-        try:
-            EventStore(self._calendar).delete(
-                uid,
-                recurrence_id=recurrence_id,
-                recurrence_range=range_value,
-            )
-        except EventStoreError as err:
-            raise HomeAssistantError("Error while deleting event: {err}") from err
-        await self._async_store()
+        async with self._calendar_lock:
+            try:
+                EventStore(self._calendar).delete(
+                    uid,
+                    recurrence_id=recurrence_id,
+                    recurrence_range=range_value,
+                )
+            except EventStoreError as err:
+                raise HomeAssistantError(f"Error while deleting event: {err}") from err
+            await self._async_store()
         await self.async_update_ha_state(force_refresh=True)
 
     async def async_update_event(
@@ -145,16 +152,23 @@ class LocalCalendarEntity(CalendarEntity):
         range_value: Range = Range.NONE
         if recurrence_range == Range.THIS_AND_FUTURE:
             range_value = Range.THIS_AND_FUTURE
-        try:
-            EventStore(self._calendar).edit(
-                uid,
-                new_event,
-                recurrence_id=recurrence_id,
-                recurrence_range=range_value,
-            )
-        except EventStoreError as err:
-            raise HomeAssistantError("Error while updating event: {err}") from err
-        await self._async_store()
+
+        async with self._calendar_lock:
+            event_store = EventStore(self._calendar)
+
+            def apply_edit() -> None:
+                event_store.edit(
+                    uid,
+                    new_event,
+                    recurrence_id=recurrence_id,
+                    recurrence_range=range_value,
+                )
+
+            try:
+                await self.hass.async_add_executor_job(apply_edit)
+            except EventStoreError as err:
+                raise HomeAssistantError(f"Error while updating event: {err}") from err
+            await self._async_store()
         await self.async_update_ha_state(force_refresh=True)
 
 
@@ -178,22 +192,31 @@ def _parse_event(event: dict[str, Any]) -> Event:
             event[key] = dt_util.as_local(value).replace(tzinfo=None)
 
     try:
-        return Event.parse_obj(event)
-    except ValidationError as err:
+        return Event(**event)
+    except CalendarParseError as err:
         _LOGGER.debug("Error parsing event input fields: %s (%s)", event, str(err))
         raise vol.Invalid("Error parsing event input fields") from err
 
 
 def _get_calendar_event(event: Event) -> CalendarEvent:
     """Return a CalendarEvent from an API event."""
+    start: datetime | date
+    end: datetime | date
+    if isinstance(event.start, datetime) and isinstance(event.end, datetime):
+        start = dt_util.as_local(event.start)
+        end = dt_util.as_local(event.end)
+        if (end - start) <= timedelta(seconds=0):
+            end = start + timedelta(minutes=30)
+    else:
+        start = event.start
+        end = event.end
+        if (end - start) < timedelta(days=0):
+            end = start + timedelta(days=1)
+
     return CalendarEvent(
         summary=event.summary,
-        start=dt_util.as_local(event.start)
-        if isinstance(event.start, datetime)
-        else event.start,
-        end=dt_util.as_local(event.end)
-        if isinstance(event.end, datetime)
-        else event.end,
+        start=start,
+        end=end,
         description=event.description,
         uid=event.uid,
         rrule=event.rrule.as_rrule_str() if event.rrule else None,

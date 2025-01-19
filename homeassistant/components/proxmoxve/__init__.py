@@ -1,4 +1,5 @@
 """Support for Proxmox VE."""
+
 from __future__ import annotations
 
 from datetime import timedelta
@@ -134,7 +135,9 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
     await hass.async_add_executor_job(build_client)
 
-    coordinators: dict[str, dict[str, dict[int, DataUpdateCoordinator]]] = {}
+    coordinators: dict[
+        str, dict[str, dict[int, DataUpdateCoordinator[dict[str, Any] | None]]]
+    ] = {}
     hass.data[DOMAIN][COORDINATORS] = coordinators
 
     # Create a coordinator for each vm/container
@@ -197,8 +200,7 @@ def create_coordinator_container_vm(
 
         def poll_api() -> dict[str, Any] | None:
             """Call the api."""
-            vm_status = call_api_container_vm(proxmox, node_name, vm_id, vm_type)
-            return vm_status
+            return call_api_container_vm(proxmox, node_name, vm_id, vm_type)
 
         vm_status = await hass.async_add_executor_job(poll_api)
 

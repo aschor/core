@@ -1,19 +1,16 @@
 """Update coordinator for HomeWizard."""
-from __future__ import annotations
 
-import logging
+from __future__ import annotations
 
 from homewizard_energy import HomeWizardEnergy
 from homewizard_energy.errors import DisabledError, RequestError
+from homewizard_energy.models import CombinedModels as DeviceResponseEntry
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DOMAIN, UPDATE_INTERVAL, DeviceResponseEntry
-
-_LOGGER = logging.getLogger(__name__)
+from .const import DOMAIN, LOGGER, UPDATE_INTERVAL
 
 
 class HWEnergyDeviceUpdateCoordinator(DataUpdateCoordinator[DeviceResponseEntry]):
@@ -22,32 +19,22 @@ class HWEnergyDeviceUpdateCoordinator(DataUpdateCoordinator[DeviceResponseEntry]
     api: HomeWizardEnergy
     api_disabled: bool = False
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        entry: ConfigEntry,
-        host: str,
-    ) -> None:
+    config_entry: ConfigEntry
+
+    def __init__(self, hass: HomeAssistant, api: HomeWizardEnergy) -> None:
         """Initialize update coordinator."""
-        super().__init__(hass, _LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL)
-        self.entry = entry
-        self.api = HomeWizardEnergy(host, clientsession=async_get_clientsession(hass))
+        super().__init__(hass, LOGGER, name=DOMAIN, update_interval=UPDATE_INTERVAL)
+        self.api = api
 
     async def _async_update_data(self) -> DeviceResponseEntry:
         """Fetch all device and sensor data from api."""
         try:
-            data = DeviceResponseEntry(
-                device=await self.api.device(),
-                data=await self.api.data(),
-                features=await self.api.features(),
-                state=await self.api.state(),
-            )
-
-            if data.features.has_system:
-                data.system = await self.api.system()
+            data = await self.api.combined()
 
         except RequestError as ex:
-            raise UpdateFailed(ex) from ex
+            raise UpdateFailed(
+                ex, translation_domain=DOMAIN, translation_key="communication_error"
+            ) from ex
 
         except DisabledError as ex:
             if not self.api_disabled:
@@ -55,10 +42,16 @@ class HWEnergyDeviceUpdateCoordinator(DataUpdateCoordinator[DeviceResponseEntry]
 
                 # Do not reload when performing first refresh
                 if self.data is not None:
-                    await self.hass.config_entries.async_reload(self.entry.entry_id)
+                    # Reload config entry to let init flow handle retrying and trigger repair flow
+                    self.hass.config_entries.async_schedule_reload(
+                        self.config_entry.entry_id
+                    )
 
-            raise UpdateFailed(ex) from ex
+            raise UpdateFailed(
+                ex, translation_domain=DOMAIN, translation_key="api_disabled"
+            ) from ex
 
         self.api_disabled = False
 
+        self.data = data
         return data

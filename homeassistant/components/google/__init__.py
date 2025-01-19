@@ -1,4 +1,5 @@
 """Support for Google - Calendar Event Devices."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping
@@ -174,7 +175,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     except aiohttp.ClientError as err:
         raise ConfigEntryNotReady from err
 
-    if not async_entry_has_scopes(hass, entry):
+    if not async_entry_has_scopes(entry):
         raise ConfigEntryAuthFailed(
             "Required scopes are not available, reauth required"
         )
@@ -197,7 +198,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass.config_entries.async_update_entry(entry, unique_id=primary_calendar.id)
 
     # Only expose the add event service if we have the correct permissions
-    if get_feature_access(hass, entry) is FeatureAccess.read_write:
+    if get_feature_access(entry) is FeatureAccess.read_write:
         await async_setup_add_event_service(hass, calendar_service)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -207,9 +208,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-def async_entry_has_scopes(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+def async_entry_has_scopes(entry: ConfigEntry) -> bool:
     """Verify that the config entry desired scope is present in the oauth token."""
-    access = get_feature_access(hass, entry)
+    access = get_feature_access(entry)
     token_scopes = entry.data.get("token", {}).get("scope", [])
     return access.scope in token_scopes
 
@@ -223,7 +224,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload config entry if the access options change."""
-    if not async_entry_has_scopes(hass, entry):
+    if not async_entry_has_scopes(entry):
         await hass.config_entries.async_reload(entry.entry_id)
 
 
@@ -285,17 +286,18 @@ async def async_setup_add_event_service(
             raise ValueError(
                 "Missing required fields to set start or end date/datetime"
             )
-
+        event = Event(
+            summary=call.data[EVENT_SUMMARY],
+            description=call.data[EVENT_DESCRIPTION],
+            start=start,
+            end=end,
+        )
+        if location := call.data.get(EVENT_LOCATION):
+            event.location = location
         try:
             await calendar_service.async_create_event(
                 call.data[EVENT_CALENDAR_ID],
-                Event(
-                    summary=call.data[EVENT_SUMMARY],
-                    description=call.data[EVENT_DESCRIPTION],
-                    location=call.data[EVENT_LOCATION],
-                    start=start,
-                    end=end,
-                ),
+                event,
             )
         except ApiException as err:
             raise HomeAssistantError(str(err)) from err

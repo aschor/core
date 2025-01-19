@@ -1,4 +1,5 @@
 """Support for ONVIF binary sensors."""
+
 from __future__ import annotations
 
 from homeassistant.components.binary_sensor import (
@@ -13,9 +14,9 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.util.enum import try_parse_enum
 
-from .base import ONVIFBaseEntity
 from .const import DOMAIN
 from .device import ONVIFDevice
+from .entity import ONVIFBaseEntity
 
 
 async def async_setup_entry(
@@ -24,7 +25,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up a ONVIF binary sensor."""
-    device = hass.data[DOMAIN][config_entry.unique_id]
+    device: ONVIFDevice = hass.data[DOMAIN][config_entry.unique_id]
 
     entities = {
         event.uid: ONVIFBinarySensor(event.uid, device)
@@ -39,16 +40,20 @@ async def async_setup_entry(
             )
 
     async_add_entities(entities.values())
+    uids_by_platform = device.events.get_uids_by_platform("binary_sensor")
 
     @callback
-    def async_check_entities():
+    def async_check_entities() -> None:
         """Check if we have added an entity for the event."""
-        new_entities = []
-        for event in device.events.get_platform("binary_sensor"):
-            if event.uid not in entities:
-                entities[event.uid] = ONVIFBinarySensor(event.uid, device)
-                new_entities.append(entities[event.uid])
-        async_add_entities(new_entities)
+        nonlocal uids_by_platform
+        if not (missing := uids_by_platform.difference(entities)):
+            return
+        new_entities: dict[str, ONVIFBinarySensor] = {
+            uid: ONVIFBinarySensor(uid, device) for uid in missing
+        }
+        if new_entities:
+            entities.update(new_entities)
+            async_add_entities(new_entities.values())
 
     device.events.async_add_listener(async_check_entities)
 

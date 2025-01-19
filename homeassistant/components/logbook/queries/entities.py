@@ -1,4 +1,5 @@
 """Entities queries for logbook."""
+
 from __future__ import annotations
 
 from collections.abc import Collection, Iterable
@@ -35,13 +36,13 @@ from .common import (
 def _select_entities_context_ids_sub_query(
     start_day: float,
     end_day: float,
-    event_types: tuple[str, ...],
+    event_type_ids: tuple[int, ...],
     states_metadata_ids: Collection[int],
     json_quoted_entity_ids: list[str],
 ) -> Select:
     """Generate a subquery to find context ids for multiple entities."""
     union = union_all(
-        select_events_context_id_subquery(start_day, end_day, event_types).where(
+        select_events_context_id_subquery(start_day, end_day, event_type_ids).where(
             apply_event_entity_id_matchers(json_quoted_entity_ids)
         ),
         apply_entities_hints(select(States.context_id_bin))
@@ -57,7 +58,7 @@ def _apply_entities_context_union(
     sel: Select,
     start_day: float,
     end_day: float,
-    event_types: tuple[str, ...],
+    event_type_ids: tuple[int, ...],
     states_metadata_ids: Collection[int],
     json_quoted_entity_ids: list[str],
 ) -> CompoundSelect:
@@ -65,7 +66,7 @@ def _apply_entities_context_union(
     entities_cte: CTE = _select_entities_context_ids_sub_query(
         start_day,
         end_day,
-        event_types,
+        event_type_ids,
         states_metadata_ids,
         json_quoted_entity_ids,
     ).cte()
@@ -95,19 +96,19 @@ def _apply_entities_context_union(
 def entities_stmt(
     start_day: float,
     end_day: float,
-    event_types: tuple[str, ...],
+    event_type_ids: tuple[int, ...],
     states_metadata_ids: Collection[int],
     json_quoted_entity_ids: list[str],
 ) -> StatementLambdaElement:
     """Generate a logbook query for multiple entities."""
     return lambda_stmt(
         lambda: _apply_entities_context_union(
-            select_events_without_states(start_day, end_day, event_types).where(
+            select_events_without_states(start_day, end_day, event_type_ids).where(
                 apply_event_entity_id_matchers(json_quoted_entity_ids)
             ),
             start_day,
             end_day,
-            event_types,
+            event_type_ids,
             states_metadata_ids,
             json_quoted_entity_ids,
         ).order_by(Events.time_fired_ts)

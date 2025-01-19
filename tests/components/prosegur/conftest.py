@@ -1,4 +1,5 @@
 """Define test fixtures for Prosegur."""
+
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from pyprosegur.installation import Camera
@@ -28,6 +29,15 @@ def mock_config_entry() -> MockConfigEntry:
 
 
 @pytest.fixture
+def mock_list_contracts() -> AsyncMock:
+    """Return list of contracts per user."""
+    return [
+        {"contractId": "123", "description": "a b c"},
+        {"contractId": "456", "description": "x y z"},
+    ]
+
+
+@pytest.fixture
 def mock_install() -> AsyncMock:
     """Return the mocked alarm install."""
     install = MagicMock()
@@ -52,9 +62,12 @@ async def init_integration(
     """Set up the Prosegur integration for testing."""
     mock_config_entry.add_to_hass(hass)
 
-    with patch(
-        "pyprosegur.installation.Installation.retrieve", return_value=mock_install
-    ), patch("pyprosegur.auth.Auth.login"):
+    with (
+        patch(
+            "pyprosegur.installation.Installation.retrieve", return_value=mock_install
+        ),
+        patch("pyprosegur.auth.Auth.login"),
+    ):
         await hass.config_entries.async_setup(mock_config_entry.entry_id)
         await hass.async_block_till_done()
 

@@ -1,25 +1,20 @@
 """Models for Recorder."""
+
 from __future__ import annotations
 
 from contextlib import suppress
 from functools import lru_cache
+import logging
 from uuid import UUID
 
-from homeassistant.util.ulid import bytes_to_ulid, ulid_to_bytes
+from homeassistant.util.ulid import (  # noqa: F401
+    bytes_to_ulid,
+    bytes_to_ulid_or_none,
+    ulid_to_bytes,
+    ulid_to_bytes_or_none,
+)
 
-
-def ulid_to_bytes_or_none(ulid: str | None) -> bytes | None:
-    """Convert an ulid to bytes."""
-    if ulid is None:
-        return None
-    return ulid_to_bytes(ulid)
-
-
-def bytes_to_ulid_or_none(_bytes: bytes | None) -> str | None:
-    """Convert bytes to a ulid."""
-    if _bytes is None:
-        return None
-    return bytes_to_ulid(_bytes)
+_LOGGER = logging.getLogger(__name__)
 
 
 @lru_cache(maxsize=16)

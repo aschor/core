@@ -1,5 +1,6 @@
 """Test the Prosegur Alarm config flow."""
-from unittest.mock import MagicMock, patch
+
+from unittest.mock import patch
 
 import pytest
 
@@ -12,25 +13,25 @@ from homeassistant.data_entry_flow import FlowResultType
 from tests.common import MockConfigEntry
 
 
-async def test_form(hass: HomeAssistant) -> None:
+async def test_form(hass: HomeAssistant, mock_list_contracts) -> None:
     """Test we get the form."""
 
     result = await hass.config_entries.flow.async_init(
         DOMAIN, context={"source": config_entries.SOURCE_USER}
     )
-    assert result["type"] == "form"
+    assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {}
 
-    install = MagicMock()
-    install.contract = "123"
-
-    with patch(
-        "homeassistant.components.prosegur.config_flow.Installation.retrieve",
-        return_value=install,
-    ) as mock_retrieve, patch(
-        "homeassistant.components.prosegur.async_setup_entry",
-        return_value=True,
-    ) as mock_setup_entry:
+    with (
+        patch(
+            "homeassistant.components.prosegur.config_flow.Installation.list",
+            return_value=mock_list_contracts,
+        ) as mock_retrieve,
+        patch(
+            "homeassistant.components.prosegur.async_setup_entry",
+            return_value=True,
+        ) as mock_setup_entry,
+    ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
@@ -41,9 +42,15 @@ async def test_form(hass: HomeAssistant) -> None:
         )
         await hass.async_block_till_done()
 
-    assert result2["type"] == "create_entry"
-    assert result2["title"] == "Contract 123"
-    assert result2["data"] == {
+        result3 = await hass.config_entries.flow.async_configure(
+            result2["flow_id"],
+            {"contract": "123"},
+        )
+        await hass.async_block_till_done()
+
+    assert result3["type"] is FlowResultType.CREATE_ENTRY
+    assert result3["title"] == "Contract 123"
+    assert result3["data"] == {
         "contract": "123",
         "username": "test-username",
         "password": "test-password",
@@ -61,7 +68,7 @@ async def test_form_invalid_auth(hass: HomeAssistant) -> None:
     )
 
     with patch(
-        "pyprosegur.installation.Installation",
+        "pyprosegur.installation.Installation.list",
         side_effect=ConnectionRefusedError,
     ):
         result2 = await hass.config_entries.flow.async_configure(
@@ -73,7 +80,7 @@ async def test_form_invalid_auth(hass: HomeAssistant) -> None:
             },
         )
 
-    assert result2["type"] == "form"
+    assert result2["type"] is FlowResultType.FORM
     assert result2["errors"] == {"base": "invalid_auth"}
 
 
@@ -84,7 +91,7 @@ async def test_form_cannot_connect(hass: HomeAssistant) -> None:
     )
 
     with patch(
-        "pyprosegur.installation.Installation",
+        "homeassistant.components.prosegur.config_flow.Installation.list",
         side_effect=ConnectionError,
     ):
         result2 = await hass.config_entries.flow.async_configure(
@@ -96,7 +103,7 @@ async def test_form_cannot_connect(hass: HomeAssistant) -> None:
             },
         )
 
-    assert result2["type"] == "form"
+    assert result2["type"] is FlowResultType.FORM
     assert result2["errors"] == {"base": "cannot_connect"}
 
 
@@ -119,11 +126,11 @@ async def test_form_unknown_exception(hass: HomeAssistant) -> None:
             },
         )
 
-    assert result2["type"] == "form"
+    assert result2["type"] is FlowResultType.FORM
     assert result2["errors"] == {"base": "unknown"}
 
 
-async def test_reauth_flow(hass: HomeAssistant) -> None:
+async def test_reauth_flow(hass: HomeAssistant, mock_list_contracts) -> None:
     """Test a reauthentication flow."""
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -136,29 +143,21 @@ async def test_reauth_flow(hass: HomeAssistant) -> None:
     )
     entry.add_to_hass(hass)
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={
-            "source": config_entries.SOURCE_REAUTH,
-            "unique_id": entry.unique_id,
-            "entry_id": entry.entry_id,
-        },
-        data=entry.data,
-    )
+    result = await entry.start_reauth_flow(hass)
     assert result["step_id"] == "reauth_confirm"
-    assert result["type"] == FlowResultType.FORM
+    assert result["type"] is FlowResultType.FORM
     assert result["errors"] == {}
 
-    install = MagicMock()
-    install.contract = "123"
-
-    with patch(
-        "homeassistant.components.prosegur.config_flow.Installation.retrieve",
-        return_value=install,
-    ) as mock_installation, patch(
-        "homeassistant.components.prosegur.async_setup_entry",
-        return_value=True,
-    ) as mock_setup_entry:
+    with (
+        patch(
+            "homeassistant.components.prosegur.config_flow.Installation.list",
+            return_value=mock_list_contracts,
+        ) as mock_installation,
+        patch(
+            "homeassistant.components.prosegur.async_setup_entry",
+            return_value=True,
+        ) as mock_setup_entry,
+    ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {
@@ -168,7 +167,7 @@ async def test_reauth_flow(hass: HomeAssistant) -> None:
         )
         await hass.async_block_till_done()
 
-    assert result2["type"] == FlowResultType.ABORT
+    assert result2["type"] is FlowResultType.ABORT
     assert result2["reason"] == "reauth_successful"
     assert entry.data == {
         "country": "PT",
@@ -201,18 +200,10 @@ async def test_reauth_flow_error(hass: HomeAssistant, exception, base_error) -> 
     )
     entry.add_to_hass(hass)
 
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN,
-        context={
-            "source": config_entries.SOURCE_REAUTH,
-            "unique_id": entry.unique_id,
-            "entry_id": entry.entry_id,
-        },
-        data=entry.data,
-    )
+    result = await entry.start_reauth_flow(hass)
 
     with patch(
-        "homeassistant.components.prosegur.config_flow.Installation.retrieve",
+        "homeassistant.components.prosegur.config_flow.Installation.list",
         side_effect=exception,
     ):
         result2 = await hass.config_entries.flow.async_configure(
@@ -224,5 +215,5 @@ async def test_reauth_flow_error(hass: HomeAssistant, exception, base_error) -> 
         )
         await hass.async_block_till_done()
 
-    assert result2["type"] == FlowResultType.FORM
+    assert result2["type"] is FlowResultType.FORM
     assert result2["errors"]["base"] == base_error

@@ -65,6 +65,11 @@ SHARK_PROPERTIES_DICT = {
         "read_only": True,
         "value": "Dummy Firmware 1.0",
     },
+    "Robot_Room_List": {
+        "base_type": "string",
+        "read_only": True,
+        "value": "AY001MRT1:Kitchen:Living Room",
+    },
 }
 
 TEST_USERNAME = "test-username"
@@ -75,5 +80,9 @@ CONFIG = {
     CONF_USERNAME: TEST_USERNAME,
     CONF_PASSWORD: TEST_PASSWORD,
     CONF_REGION: TEST_REGION,
+}
+CONFIG_NO_REGION = {
+    CONF_USERNAME: TEST_USERNAME,
+    CONF_PASSWORD: TEST_PASSWORD,
 }
 ENTRY_ID = "0123456789abcdef0123456789abcdef"

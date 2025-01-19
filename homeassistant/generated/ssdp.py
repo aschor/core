@@ -224,6 +224,58 @@ SSDP = {
             "manufacturer": "The OctoPrint Project",
         },
     ],
+    "onkyo": [
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:1",
+            "manufacturer": "ONKYO",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:2",
+            "manufacturer": "ONKYO",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:3",
+            "manufacturer": "ONKYO",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:1",
+            "manufacturer": "Onkyo & Pioneer Corporation",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:2",
+            "manufacturer": "Onkyo & Pioneer Corporation",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:3",
+            "manufacturer": "Onkyo & Pioneer Corporation",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:1",
+            "manufacturer": "Pioneer",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:2",
+            "manufacturer": "Pioneer",
+        },
+        {
+            "deviceType": "urn:schemas-upnp-org:device:MediaRenderer:3",
+            "manufacturer": "Pioneer",
+        },
+    ],
+    "openhome": [
+        {
+            "st": "urn:av-openhome-org:service:Product:1",
+        },
+        {
+            "st": "urn:av-openhome-org:service:Product:2",
+        },
+        {
+            "st": "urn:av-openhome-org:service:Product:3",
+        },
+        {
+            "st": "urn:av-openhome-org:service:Product:4",
+        },
+    ],
     "roku": [
         {
             "deviceType": "urn:roku-com:device:player:1-0",
@@ -283,6 +335,10 @@ SSDP = {
             "manufacturer": "Ubiquiti Networks",
             "modelDescription": "UniFi Dream Machine SE",
         },
+        {
+            "manufacturer": "Ubiquiti Networks",
+            "modelDescription": "UniFi Dream Machine Pro Max",
+        },
     ],
     "unifiprotect": [
         {
@@ -297,6 +353,10 @@ SSDP = {
             "manufacturer": "Ubiquiti Networks",
             "modelDescription": "UniFi Dream Machine SE",
         },
+        {
+            "manufacturer": "Ubiquiti Networks",
+            "modelDescription": "UniFi Dream Machine Pro Max",
+        },
     ],
     "upnp": [
         {
@@ -304,6 +364,12 @@ SSDP = {
         },
         {
             "st": "urn:schemas-upnp-org:device:InternetGatewayDevice:2",
+        },
+        {
+            "nt": "urn:schemas-upnp-org:device:InternetGatewayDevice:1",
+        },
+        {
+            "nt": "urn:schemas-upnp-org:device:InternetGatewayDevice:2",
         },
     ],
     "webostv": [

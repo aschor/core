@@ -1,4 +1,6 @@
 """Test Local Media Source."""
+
+from collections.abc import AsyncGenerator
 from http import HTTPStatus
 import io
 from pathlib import Path
@@ -9,8 +11,8 @@ import pytest
 
 from homeassistant.components import media_source, websocket_api
 from homeassistant.components.media_source import const
-from homeassistant.config import async_process_ha_core_config
 from homeassistant.core import HomeAssistant
+from homeassistant.core_config import async_process_ha_core_config
 from homeassistant.setup import async_setup_component
 
 from tests.common import MockUser
@@ -18,7 +20,7 @@ from tests.typing import ClientSessionGenerator, WebSocketGenerator
 
 
 @pytest.fixture
-async def temp_dir(hass):
+async def temp_dir(hass: HomeAssistant) -> AsyncGenerator[str]:
     """Return a temp dir."""
     with TemporaryDirectory() as tmpdirname:
         target_dir = Path(tmpdirname) / "another_subdir"
@@ -131,10 +133,14 @@ async def test_media_view(
 async def test_upload_view(
     hass: HomeAssistant,
     hass_client: ClientSessionGenerator,
-    temp_dir,
+    temp_dir: str,
+    tmp_path: Path,
     hass_admin_user: MockUser,
 ) -> None:
     """Allow uploading media."""
+    # We need a temp dir that's not under tempdir fixture
+    extra_media_dir = tmp_path
+    hass.config.media_dirs["another_path"] = temp_dir
 
     img = (Path(__file__).parent.parent / "image_upload/logo.png").read_bytes()
 
@@ -167,6 +173,8 @@ async def test_upload_view(
         "media-source://media_source/test_dir/..",
         # Domain != media_source
         "media-source://nest/test_dir/.",
+        # Other directory
+        f"media-source://media_source/another_path///{extra_media_dir}/",
         # Completely something else
         "http://bla",
     ):
@@ -178,7 +186,7 @@ async def test_upload_view(
             },
         )
 
-        assert res.status == 400
+        assert res.status == 400, bad_id
         assert not (Path(temp_dir) / "bad-source-id.png").is_file()
 
     # Test invalid POST data
@@ -240,7 +248,7 @@ async def test_upload_view(
 async def test_remove_file(
     hass: HomeAssistant,
     hass_ws_client: WebSocketGenerator,
-    temp_dir,
+    temp_dir: str,
     hass_admin_user: MockUser,
 ) -> None:
     """Allow uploading media."""

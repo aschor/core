@@ -1,17 +1,22 @@
 """Manage the history_stats data."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 import datetime
+import logging
+import math
 
 from homeassistant.components.recorder import get_instance, history
-from homeassistant.core import Event, HomeAssistant, State
+from homeassistant.core import Event, EventStateChangedData, HomeAssistant, State
 from homeassistant.helpers.template import Template
 import homeassistant.util.dt as dt_util
 
 from .helpers import async_calculate_period, floored_timestamp
 
 MIN_TIME_UTC = datetime.datetime.min.replace(tzinfo=dt_util.UTC)
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -55,7 +60,9 @@ class HistoryStats:
         self._start = start
         self._end = end
 
-    async def async_update(self, event: Event | None) -> HistoryStatsState:
+    async def async_update(
+        self, event: Event[EventStateChangedData] | None
+    ) -> HistoryStatsState:
         """Update the stats at a given time."""
         # Get previous values of start and end
         previous_period_start, previous_period_end = self._period
@@ -78,7 +85,7 @@ class HistoryStats:
         utc_now = dt_util.utcnow()
         now_timestamp = floored_timestamp(utc_now)
 
-        if current_period_start > utc_now:
+        if current_period_start_timestamp > now_timestamp:
             # History cannot tell the future
             self._history_current_period = []
             self._previous_run_before_start = True
@@ -104,17 +111,14 @@ class HistoryStats:
             )
         ):
             new_data = False
-            if event and event.data["new_state"] is not None:
-                new_state: State = event.data["new_state"]
+            if event and (new_state := event.data["new_state"]) is not None:
                 if (
                     current_period_start_timestamp
                     <= floored_timestamp(new_state.last_changed)
                     <= current_period_end_timestamp
                 ):
                     self._history_current_period.append(
-                        HistoryState(
-                            new_state.state, new_state.last_changed.timestamp()
-                        )
+                        HistoryState(new_state.state, new_state.last_changed_timestamp)
                     )
                     new_data = True
             if not new_data and current_period_end_timestamp < now_timestamp:
@@ -122,7 +126,19 @@ class HistoryStats:
                 # Don't compute anything as the value cannot have changed
                 return self._state
         else:
-            await self._async_history_from_db(current_period_start, current_period_end)
+            await self._async_history_from_db(
+                current_period_start_timestamp, current_period_end_timestamp
+            )
+            if event and (new_state := event.data["new_state"]) is not None:
+                if (
+                    current_period_start_timestamp
+                    <= floored_timestamp(new_state.last_changed)
+                    <= current_period_end_timestamp
+                ):
+                    self._history_current_period.append(
+                        HistoryState(new_state.state, new_state.last_changed_timestamp)
+                    )
+
             self._previous_run_before_start = False
 
         seconds_matched, match_count = self._async_compute_seconds_and_changes(
@@ -135,15 +151,15 @@ class HistoryStats:
 
     async def _async_history_from_db(
         self,
-        current_period_start: datetime.datetime,
-        current_period_end: datetime.datetime,
+        current_period_start_timestamp: float,
+        current_period_end_timestamp: float,
     ) -> None:
         """Update history data for the current period from the database."""
         instance = get_instance(self.hass)
         states = await instance.async_add_executor_job(
             self._state_changes_during_period,
-            current_period_start,
-            current_period_end,
+            current_period_start_timestamp,
+            current_period_end_timestamp,
         )
         self._history_current_period = [
             HistoryState(state.state, state.last_changed.timestamp())
@@ -151,8 +167,11 @@ class HistoryStats:
         ]
 
     def _state_changes_during_period(
-        self, start: datetime.datetime, end: datetime.datetime
+        self, start_ts: float, end_ts: float
     ) -> list[State]:
+        """Return state changes during a period."""
+        start = dt_util.utc_from_timestamp(start_ts)
+        end = dt_util.utc_from_timestamp(end_ts)
         return history.state_changes_during_period(
             self.hass,
             start,
@@ -169,18 +188,24 @@ class HistoryStats:
         # state_changes_during_period is called with include_start_time_state=True
         # which is the default and always provides the state at the start
         # of the period
-        previous_state_matches = (
-            self._history_current_period
-            and self._history_current_period[0].state in self._entity_states
-        )
-        last_state_change_timestamp = start_timestamp
+        previous_state_matches = False
+        last_state_change_timestamp = 0.0
         elapsed = 0.0
-        match_count = 1 if previous_state_matches else 0
+        match_count = 0
 
         # Make calculations
         for history_state in self._history_current_period:
             current_state_matches = history_state.state in self._entity_states
             state_change_timestamp = history_state.last_changed
+
+            if math.floor(state_change_timestamp) > now_timestamp:
+                # Shouldn't count states that are in the future
+                _LOGGER.debug(
+                    "Skipping future timestamp %s (now %s)",
+                    state_change_timestamp,
+                    now_timestamp,
+                )
+                continue
 
             if previous_state_matches:
                 elapsed += state_change_timestamp - last_state_change_timestamp
@@ -188,7 +213,7 @@ class HistoryStats:
                 match_count += 1
 
             previous_state_matches = current_state_matches
-            last_state_change_timestamp = state_change_timestamp
+            last_state_change_timestamp = max(start_timestamp, state_change_timestamp)
 
         # Count time elapsed between last history state and end of measure
         if previous_state_matches:

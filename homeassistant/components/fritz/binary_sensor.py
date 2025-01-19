@@ -1,4 +1,5 @@
 """AVM FRITZ!Box connectivity sensor."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -15,18 +16,14 @@ from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .common import (
-    AvmWrapper,
-    ConnectionInfo,
-    FritzBoxBaseCoordinatorEntity,
-    FritzEntityDescription,
-)
 from .const import DOMAIN
+from .coordinator import AvmWrapper, ConnectionInfo
+from .entity import FritzBoxBaseCoordinatorEntity, FritzEntityDescription
 
 _LOGGER = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True, kw_only=True)
 class FritzBinarySensorEntityDescription(
     BinarySensorEntityDescription, FritzEntityDescription
 ):
@@ -38,14 +35,14 @@ class FritzBinarySensorEntityDescription(
 SENSOR_TYPES: tuple[FritzBinarySensorEntityDescription, ...] = (
     FritzBinarySensorEntityDescription(
         key="is_connected",
-        name="Connection",
+        translation_key="is_connected",
         device_class=BinarySensorDeviceClass.CONNECTIVITY,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda status, _: bool(status.is_connected),
     ),
     FritzBinarySensorEntityDescription(
         key="is_linked",
-        name="Link",
+        translation_key="is_linked",
         device_class=BinarySensorDeviceClass.PLUG,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda status, _: bool(status.is_linked),
@@ -68,7 +65,7 @@ async def async_setup_entry(
         if description.is_suitable(connection_info)
     ]
 
-    async_add_entities(entities, True)
+    async_add_entities(entities)
 
 
 class FritzBoxBinarySensor(FritzBoxBaseCoordinatorEntity, BinarySensorEntity):
@@ -80,7 +77,10 @@ class FritzBoxBinarySensor(FritzBoxBaseCoordinatorEntity, BinarySensorEntity):
     def is_on(self) -> bool | None:
         """Return true if the binary sensor is on."""
         if isinstance(
-            state := self.coordinator.data.get(self.entity_description.key), bool
+            state := self.coordinator.data["entity_states"].get(
+                self.entity_description.key
+            ),
+            bool,
         ):
             return state
         return None
